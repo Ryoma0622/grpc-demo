@@ -6,7 +6,6 @@ import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import io.grpc.stub.StreamObserver;
 
-import java.sql.Time;
 import java.util.Arrays;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -27,9 +26,9 @@ public class GreetingClient {
                 .usePlaintext()
                 .build();
 
-//        doUnaryCall(channel);
-//        doServerStreamingCall(channel);
-//        doClientStreamingCall(channel);
+        doUnaryCall(channel);
+        doServerStreamingCall(channel);
+        doClientStreamingCall(channel);
         doBiDiStreamingCall(channel);
 
         System.out.println("Shutting down channel");
@@ -37,42 +36,52 @@ public class GreetingClient {
     }
 
     private void doUnaryCall(ManagedChannel channel) {
+        System.out.println("Executing doUnaryCall");
+
         // created a greet service client ( blocking - synchronous )
         GreetServiceGrpc.GreetServiceBlockingStub greetClient = GreetServiceGrpc.newBlockingStub(channel);
 
         // created a protocol buffer greeting message
-        Greeting greeting = com.proto.greet.Greeting.newBuilder()
+        Greeting greeting = Greeting.newBuilder()
                 .setFirstName("Ryoma")
                 .setLastName("Jodoi")
                 .build();
 
         // do the same for a GreetRequest
-        GreetRequest greetRequest = com.proto.greet.GreetRequest.newBuilder()
+        GreetRequest greetRequest = GreetRequest.newBuilder()
                 .setGreeting(greeting)
                 .build();
 
         // call the RPC and get back a GreetResponse ( protocol buffers )
+        System.out.println("Sending a request");
         GreetResponse greetResponse =  greetClient.greet(greetRequest);
 
         System.out.println(greetResponse.getResult());
     }
 
     private void doServerStreamingCall(ManagedChannel channel) {
+        System.out.println("Executing doServerStreamingCall");
+
         // created a greet service client ( blocking - synchronous )
         GreetServiceGrpc.GreetServiceBlockingStub greetClient = GreetServiceGrpc.newBlockingStub(channel);
-
 
         // Server Streaming
         GreetManyTimesRequest greetManyTimesRequest = GreetManyTimesRequest.newBuilder()
                 .setGreeting(Greeting.newBuilder().setFirstName("Ryoma").build())
                 .build();
 
+        System.out.println("Sending a request");
         greetClient.greetManyTimes(greetManyTimesRequest).forEachRemaining(
-                greetManyTimesResponse -> System.out.println(greetManyTimesResponse.getResult())
+                greetManyTimesResponse -> {
+                    System.out.println("Received a response from the server");
+                    System.out.println(greetManyTimesResponse.getResult());
+                }
         );
     }
 
     private void doClientStreamingCall(ManagedChannel channel) {
+        System.out.println("Executing doClientStreamingCall");
+
         // create a client (stub)
         GreetServiceGrpc.GreetServiceStub asyncClient = GreetServiceGrpc.newStub(channel);
 
@@ -82,9 +91,9 @@ public class GreetingClient {
             @Override
             public void onNext(LongGreetResponse value) {
                 // we get a response from the server
+                // onNext will be called only once
                 System.out.println("Received a response from the server");
                 System.out.println(value.getResult());
-                // onNext will be called only once
             }
 
             @Override
@@ -101,7 +110,7 @@ public class GreetingClient {
         });
 
         // streaming message #1
-        System.out.println("sending message 1");
+        System.out.println("Sending message: Ryoma");
         requestObserver.onNext(LongGreetRequest.newBuilder()
             .setGreeting(Greeting.newBuilder()
                 .setFirstName("Ryoma")
@@ -109,7 +118,7 @@ public class GreetingClient {
             .build());
 
         // streaming message #2
-        System.out.println("sending message 2");
+        System.out.println("Sending message: Ryoma2");
         requestObserver.onNext(LongGreetRequest.newBuilder()
                 .setGreeting(Greeting.newBuilder()
                         .setFirstName("Ryoma2")
@@ -117,7 +126,7 @@ public class GreetingClient {
                 .build());
 
         // streaming message #3
-        System.out.println("sending message 3");
+        System.out.println("Sending message: Ryoma3");
         requestObserver.onNext(LongGreetRequest.newBuilder()
                 .setGreeting(Greeting.newBuilder()
                         .setFirstName("Ryoma3")
@@ -135,6 +144,8 @@ public class GreetingClient {
     }
 
     private void doBiDiStreamingCall(ManagedChannel channel) {
+        System.out.println("Executing doBiDiStreamingCall");
+
         // create a client (stub)
         GreetServiceGrpc.GreetServiceStub asyncClient = GreetServiceGrpc.newStub(channel);
 
